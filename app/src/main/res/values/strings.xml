@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">DemoProductReview</string>
+    <string name="welcome_to">Welcome to</string>
+    <string name="demo_product_review">Demo Product Review</string>
+    <string name="featured_products">FEATURED PRODUCTS</string>
+    <string name="see_all">See all</string>
+    <string name="browse_categories">BROWSE CATEGORIES</string>
 </resources>
