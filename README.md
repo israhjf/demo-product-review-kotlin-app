@@ -30,8 +30,6 @@ Jetpack Compose UI components and screens.
 ## API Integration
 The app integrates with the DummyJSON API to fetch:
 - Products: `GET /products`
-- Categories: `GET /products/categories`
-- Products by Category: `GET /products/category/{category}`
 
 ## Setup
 1. Clone the repository
