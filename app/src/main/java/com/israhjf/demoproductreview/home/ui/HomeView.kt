@@ -102,7 +102,7 @@ private fun SearchBarSection(
             .padding(horizontal = 16.dp),
         placeholder = {
             Text(
-                text = "Search products...",
+                text = stringResource(R.string.search_products),
                 color = Color.Black,
                 fontSize = 14.sp
             )
@@ -110,7 +110,7 @@ private fun SearchBarSection(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search",
+                contentDescription = null,
                 tint = Color.Gray,
                 modifier = Modifier.size(20.dp)
             )
@@ -245,7 +245,7 @@ private fun FeaturedProductsSection(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "No featured products available",
+                            text = stringResource(R.string.no_featured_product_available),
                             color = Color.Gray,
                             fontSize = 16.sp
                         )
@@ -412,7 +412,7 @@ private fun BrowseProductsSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No products available",
+                    text = stringResource(R.string.no_products_available),
                     color = Color.Gray,
                     fontSize = 16.sp
                 )

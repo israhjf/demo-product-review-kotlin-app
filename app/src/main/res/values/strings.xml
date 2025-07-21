@@ -6,4 +6,8 @@
     <string name="see_all">See all</string>
     <string name="browse_categories">BROWSE CATEGORIES</string>
     <string name="browse_products">BROWSE PRODUCTS</string>
+    <string name="no_products_available">No products available</string>
+    <string name="no_featured_product_available">No featured product available</string>
+    <string name="search_products">Search products…</string>
+
 </resources>
