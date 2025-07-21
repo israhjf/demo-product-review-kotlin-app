@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.israhjf.demoproductreview.home.ui.HomeView
+import com.israhjf.demoproductreview.productDetails.ui.ProductDetailsView
 
 @Composable
 fun Navigation(startScreen: AppScreen) {
@@ -16,6 +17,9 @@ fun Navigation(startScreen: AppScreen) {
     ) {
         composable<AppScreen.Home> {
             HomeView()
+        }
+        composable<AppScreen.ProductDetails> {
+            ProductDetailsView()
         }
     }
 }
