@@ -2,30 +2,44 @@ package com.israhjf.demoproductreview.home.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.israhjf.demoproductreview.R
+import com.israhjf.demoproductreview.dummyJsonApi.models.Product
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeView(
     model: HomeViewModel = koinViewModel()
 ) {
+    val featuredProducts by model.featuredProducts.collectAsState()
+    val filteredProducts by model.filteredProducts.collectAsState()
+    val searchQuery by model.searchQuery.collectAsState()
+    val isLoading by model.isLoading.collectAsState()
+    val error by model.error.collectAsState()
+    
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
@@ -36,10 +50,98 @@ fun HomeView(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             HeaderSection()
-            Column (Modifier.verticalScroll(rememberScrollState())){
-                FeaturedProductsSection()
-                BrowseCategoriesSection()
+            
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (error != null) {
+                ErrorSection(
+                    error = error!!,
+                    onRetry = { model.refreshData() }
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        FeaturedProductsSection(
+                            featuredProducts = featuredProducts,
+                            onProductClick = { /* TODO: Navigate to product detail */ }
+                        )
+                    }
+
+                    item {
+                        BrowseProductsSection(
+                            products = filteredProducts,
+                            onProductClick = { /* TODO: Navigate to product detail */ },
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { model.onSearchQueryChange(it) }
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchBarSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        placeholder = {
+            Text(
+                text = "Search products...",
+                color = Color.Black,
+                fontSize = 14.sp
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = Color.Gray,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        singleLine = true,
+        textStyle = androidx.compose.ui.text.TextStyle(
+            fontSize = 14.sp
+        )
+    )
+}
+
+@Composable
+private fun ErrorSection(
+    error: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Error: $error",
+            color = Color.Red,
+            fontSize = 16.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Retry")
         }
     }
 }
@@ -100,7 +202,8 @@ private fun HeaderSection() {
 
 @Composable
 private fun FeaturedProductsSection(
-    model: HomeViewModel = koinViewModel()
+    featuredProducts: List<Product>,
+    onProductClick: (Product) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -114,71 +217,149 @@ private fun FeaturedProductsSection(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Box {
-                // Product image placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFE0E0E0))
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(
-                            Color(0xFF1976D2).copy(alpha = 0.9f),
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                        )
-                        .padding(16.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+
+        if (featuredProducts.isNotEmpty()) {
+            val firstProduct = featuredProducts.first()
+            FeaturedProductCard(
+                product = firstProduct,
+                onClick = { onProductClick(firstProduct) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFE0E0E0))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
                     ) {
                         Text(
-                            text = "Product Name",
-                            color = Color.White,
+                            text = "No featured products available",
+                            color = Color.Gray,
                             fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "$299.99",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Button(
-            onClick = { /* TODO: Handle see all products */ },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF2196F3)
-            ),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.see_all),
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+    }
+}
+
+@Composable
+private fun FeaturedProductCard(
+    product: Product,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(product.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = product.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(
+                        Color(0xFF1976D2).copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = product.title,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$${product.price}",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun BrowseCategoriesSection(
-    model: HomeViewModel = koinViewModel()
+private fun SmallProductCard(
+    product: Product,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(120.dp)
+            .height(160.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(product.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = product.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                contentScale = ContentScale.Crop
+            )
+            Column(
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(
+                    text = product.title,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "$${product.price}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BrowseProductsSection(
+    products: List<Product>,
+    onProductClick: (Product) -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -186,86 +367,54 @@ private fun BrowseCategoriesSection(
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = stringResource(R.string.browse_categories),
+            text = stringResource(R.string.browse_products),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Category cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            CategoryCard(
-                modifier = Modifier.weight(1f),
-                onClick = { /* TODO: Handle category click */ }
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            CategoryCard(
-                modifier = Modifier.weight(1f),
-                onClick = { /* TODO: Handle category click */ }
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Button(
-            onClick = { /* TODO: Handle see all categories */ },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50)
-            ),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.see_all),
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-        }
-    }
-}
 
-@Composable
-private fun CategoryCard(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .height(120.dp),
-        shape = RoundedCornerShape(16.dp),
-        onClick = onClick
-    ) {
-        Box {
-            // Category image placeholder
+        Spacer(modifier = Modifier.height(16.dp))
+
+        SearchBarSection(
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        if (products.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val productRows = products.chunked(3)
+                
+                productRows.forEach { rowProducts ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        rowProducts.forEach { product ->
+                            SmallProductCard(
+                                product = product,
+                                onClick = { onProductClick(product) }
+                            )
+                        }
+                        
+                        repeat(3 - rowProducts.size) {
+                            Spacer(modifier = Modifier.width(120.dp))
+                        }
+                    }
+                }
+            }
+        } else {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFE0E0E0))
-            )
-            
-            // Overlay with category name
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(
-                        Color(0xFF388E3C).copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-                    )
-                    .padding(12.dp)
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Category Name",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    modifier = Modifier.align(Alignment.Center)
+                    text = "No products available",
+                    color = Color.Gray,
+                    fontSize = 16.sp
                 )
             }
         }
