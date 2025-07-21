@@ -1,9 +1,12 @@
 package com.israhjf.demoproductreview.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.israhjf.demoproductreview.home.ui.HomeView
 import com.israhjf.demoproductreview.productDetails.ui.ProductDetailsView
 
@@ -16,10 +19,15 @@ fun Navigation(startScreen: AppScreen) {
         startDestination = startScreen,
     ) {
         composable<AppScreen.Home> {
-            HomeView()
+            HomeView(
+                onProductClick = { productId ->
+                    navController.navigate(AppScreen.ProductDetails(productId))
+                }
+            )
         }
-        composable<AppScreen.ProductDetails> {
-            ProductDetailsView()
+        composable<AppScreen.ProductDetails> { backStackEntry ->
+            val arg = backStackEntry.toRoute<AppScreen.ProductDetails>()
+            ProductDetailsView(productId = arg.productId)
         }
     }
 }

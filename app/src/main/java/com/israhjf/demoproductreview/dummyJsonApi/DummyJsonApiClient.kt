@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 
 interface DummyJsonApiClient {
     suspend fun getProducts(limit: Int = 10, skip: Int = 0): ProductsResponse
+    suspend fun getProductById(productId: Int): com.israhjf.demoproductreview.dummyJsonApi.models.Product
 }
 
 class DummyJsonApiClientImpl : DummyJsonApiClient {
@@ -56,6 +57,19 @@ class DummyJsonApiClientImpl : DummyJsonApiClient {
             result
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching products: ${e.message}")
+            throw e
+        }
+    }
+
+    override suspend fun getProductById(productId: Int): com.israhjf.demoproductreview.dummyJsonApi.models.Product = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Fetching product by id: $productId")
+            val response = client.get("$baseUrl/products/$productId")
+            val result = response.body<com.israhjf.demoproductreview.dummyJsonApi.models.Product>()
+            Log.d(TAG, "Successfully fetched product: ${result.title}")
+            result
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching product by id: ${e.message}")
             throw e
         }
     }

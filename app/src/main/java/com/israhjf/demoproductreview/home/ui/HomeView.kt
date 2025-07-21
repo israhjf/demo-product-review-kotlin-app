@@ -32,7 +32,8 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeView(
-    model: HomeViewModel = koinViewModel()
+    model: HomeViewModel = koinViewModel(),
+    onProductClick: (Int) -> Unit = {}
 ) {
     val featuredProducts by model.featuredProducts.collectAsState()
     val filteredProducts by model.filteredProducts.collectAsState()
@@ -71,14 +72,14 @@ fun HomeView(
                     item {
                         FeaturedProductsSection(
                             featuredProducts = featuredProducts,
-                            onProductClick = { /* TODO: Navigate to product detail */ }
+                            onProductClick = { product -> onProductClick(product.id) }
                         )
                     }
 
                     item {
                         BrowseProductsSection(
                             products = filteredProducts,
-                            onProductClick = { /* TODO: Navigate to product detail */ },
+                            onProductClick = { product -> onProductClick(product.id) },
                             searchQuery = searchQuery,
                             onSearchQueryChange = { model.onSearchQueryChange(it) }
                         )

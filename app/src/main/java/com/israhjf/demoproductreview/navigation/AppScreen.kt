@@ -8,5 +8,5 @@ sealed class AppScreen {
     @Serializable
     data object Home: AppScreen()
     @Serializable
-    data object ProductDetails: AppScreen()
+    class ProductDetails(val productId: Int): AppScreen()
 }
